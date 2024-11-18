@@ -1,5 +1,5 @@
 from src.ref_services.os_service import *
-from src.single_scripts.new_script import start
+from src.single_scripts.fix_logs_filter import start
 
 
 def main():

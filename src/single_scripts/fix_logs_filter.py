@@ -130,3 +130,6 @@ def generate_file(dir_path, name, header, content):
         output_file.writelines("\n".join(header))
         output_file.writelines("\n")
         output_file.writelines("\n".join(content))
+        
+if __name__ == "__main__":
+    start()
