@@ -65,7 +65,7 @@ def generate_outputs(file_path, filters):
         
         i = 0
         while i < len(lines):
-            line = lines[i].strip()
+            line = f"{i}.- {lines[i].strip()}"
             
             if "35=y" in line:
                 securitylist.append(line)
@@ -74,7 +74,7 @@ def generate_outputs(file_path, filters):
             
             if "--------------- USER CON" in line:
                 if i > 0:
-                    header.append(lines[i - 1].strip())
+                    header.append(f"{i - 1}.- {lines[i - 1].strip()}")
                 if len(error_misc) > 0:
                     error_misc.pop()
 
@@ -82,7 +82,7 @@ def generate_outputs(file_path, filters):
                 
                 for j in range(1, 9):
                     if i + j < len(lines):
-                        header.append(lines[i + j].strip())
+                        header.append(f"{i + j}.- {lines[i + j].strip()}")
                 i += 9
                 continue
 
