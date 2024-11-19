@@ -1,6 +1,10 @@
 import os
 import shutil
-from tkinter import Tk, filedialog, messagebox
+import winreg
+from tkinter import filedialog
+
+REGISTRY_PATH = r"SOFTWARE\\JavaSoft\\Prefs\\filterScript"
+LAST_DIR_KEY = "LastUsedDir"
 
 def start() :
     file_path = pick_and_copy_file() # Paso 0: Abrir el archivo a procesar
@@ -9,12 +13,15 @@ def start() :
     filter_inputs = get_filter_inputs() # Paso 1: Solicitar criterios de filtro
     
     generate_outputs(file_path, filter_inputs) # Paso 2: Solicitar criterios de filtro
+    
+    input("Done. Press Enter to close...") 
 
 
 def pick_and_copy_file():
-    desktop_dir = os.path.join(os.path.expanduser("~"), "Desktop") # Establece el directorio inicial en el Escritorio del usuario
+    initial_dir = get_last_directory()
+    
     original_file_path = filedialog.askopenfilename(
-        initialdir=desktop_dir,
+        initialdir=initial_dir,
         title="Selecciona un archivo",
         filetypes=(("Archivos permitidos", "*.reg *.log *.txt"),)
     ) # Abre el cuadro de diálogo para seleccionar un archivo
@@ -22,6 +29,8 @@ def pick_and_copy_file():
     if not original_file_path:
         print("No file selected")
         return None
+    
+    save_last_directory(os.path.dirname(original_file_path))
     
     filename, extension = os.path.splitext(os.path.basename(original_file_path)) # Obtiene el nombre y extension del archivo
     input_folder_path = get_input_folder() # Crea/ obtiene el path al directorio de input
@@ -37,6 +46,28 @@ def pick_and_copy_file():
     return new_file_path
 
 
+def get_last_directory():
+    # os.path.join(os.path.expanduser("~"), "Desktop") # Establece el directorio inicial en el Escritorio del usuario
+    
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
+            last_dir = winreg.QueryValueEx(key, LAST_DIR_KEY)[0]
+            if os.path.exists(last_dir):  # Verificar que el directorio aún existe
+                return last_dir
+    except FileNotFoundError:
+        print("Conection to SO winreg error. Setting initial directory to Desktop by default.")
+    return os.path.join(os.path.expanduser("~"), "Desktop")  # Valor predeterminad
+
+
+def save_last_directory(directory):
+    """Guarda el último directorio utilizado en el registro."""
+    try:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH) as key:
+            winreg.SetValueEx(key, LAST_DIR_KEY, 0, winreg.REG_SZ, directory)
+    except Exception as e:
+        print(f"Error saving to registry: {e}")
+
+
 def get_input_folder():
     # Obtener el directorio raíz del proyecto (el directorio actual)
     project_root = os.getcwd()
@@ -46,20 +77,25 @@ def get_input_folder():
     os.makedirs(folder, exist_ok=True)
     return folder
 
+
 def get_filter_inputs():
     print("Input filter criteria (Format example: \"NVDA ASUS MSFT, INTL\" will generate a file with msgs that contain first 3 items, and another one that contain INTL)")
     string_input = input() 
     item_split_input = [item.strip().split() for item in string_input.split(",")]
     return item_split_input
 
+
 def generate_outputs(file_path, filters):
     header = []
     unfiltered = []
-    filtered_files = {" ".join(key): [] for key in filters}
-    if len(filtered_files) == 1 and "" in filtered_files: filtered_files = dict()
     securitylist = []
     error_misc = []
+    filtered_files = {" ".join(key): [] for key in filters}
+    if len(filtered_files) == 1 and "" in filtered_files: 
+        filtered_files = dict()
     
+    out_folder_path = get_out_folder(file_path)         
+
     with open(file_path, 'r') as file:
         lines = file.readlines()
         
@@ -104,14 +140,13 @@ def generate_outputs(file_path, filters):
             error_misc.append(line)
             i += 1
             
-    out_folder_path = get_out_folder(file_path)         
     
     generate_file(out_folder_path, "errors_misc", header, error_misc)
     generate_file(out_folder_path, "securitylist", header, securitylist)
     generate_file(out_folder_path, "unfiltered", header, unfiltered)
     for key in filtered_files.keys():
         generate_file(out_folder_path, f"filtered by {key}", header, filtered_files[key])
-    pass
+
 
 def get_out_folder(file_path):
     # Obtener el directorio raíz del proyecto (el directorio actual)
