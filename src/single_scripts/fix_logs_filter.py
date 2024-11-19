@@ -12,7 +12,7 @@ def start() :
     
     filter_inputs = get_filter_inputs() # Paso 1: Solicitar criterios de filtro
     
-    generate_outputs(file_path, filter_inputs) # Paso 2: Solicitar criterios de filtro
+    generate_outputs(file_path, filter_inputs) # Paso 2: Procesar el archivo y generar 
     
     input("Done. Press Enter to close...") 
 
@@ -55,7 +55,7 @@ def get_last_directory():
             if os.path.exists(last_dir):  # Verificar que el directorio aún existe
                 return last_dir
     except FileNotFoundError:
-        print("Conection to SO winreg error. Setting initial directory to Desktop by default.")
+        print("Last directory opened not found. Setting initial directory to Desktop.")
     return os.path.join(os.path.expanduser("~"), "Desktop")  # Valor predeterminad
 
 
