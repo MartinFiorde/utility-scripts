@@ -72,7 +72,7 @@ def generate_outputs(file_path, filters):
                 i += 1
                 continue
             
-            if "- USER CONNECTION" in line:
+            if "--------------- USER CON" in line:
                 if i > 0:
                     header.append(lines[i - 1].strip())
                 if len(error_misc) > 0:
