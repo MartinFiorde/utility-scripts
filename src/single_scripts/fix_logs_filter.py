@@ -18,10 +18,12 @@ def start() :
 
 
 def pick_and_copy_file():
-    initial_dir = get_last_directory()
+    initial_file_path = get_last_directory()  # Obtén el path del último archivo usado
+    initial_dir, initial_file = os.path.split(initial_file_path)  # Separa el directorio y el nombre del archivo
     
     original_file_path = filedialog.askopenfilename(
         initialdir=initial_dir,
+        initialfile=initial_file,
         title="Selecciona un archivo",
         filetypes=(("Archivos permitidos", "*.reg *.log *.txt"),)
     ) # Abre el cuadro de diálogo para seleccionar un archivo
