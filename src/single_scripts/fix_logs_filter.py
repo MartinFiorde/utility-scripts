@@ -183,6 +183,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
     generate_file(folder_path, f"{file_name} - securitylist", header_str, set_row_index(securitylist, True))
     for key in filters_dict.keys():
         generate_file(folder_path, f"{file_name} - filtered by {key}", header_str, set_row_index(filters_dict[key]))
+        generate_csv(folder_path, f"{file_name} - filtered by {key}", header_str, set_row_index(filters_dict[key]))
     if generate_unfiltered:
         generate_file(folder_path, f"{file_name} - unfiltered", header_str, set_row_index(unfiltered))
 
@@ -212,6 +213,27 @@ def generate_file(dir_path, name, header, content):
         output_file.writelines("\n".join(header))
         output_file.writelines("\n\n")
         output_file.writelines("\n".join(content))
+        
+def generate_csv(dir_path, name, header, content):
+    print(f"CSV GENERATED FOR {name}")
+    output_file_path = os.path.join(dir_path, f'{name}.csv')
+    csv_content = []
+    T = "\t"
+    
+    for row in content:
+        row = row.strip()
+        row = row.replace("(8=", f"({T}8{T}")
+        row = row.replace(" - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for clasic and plus
+        row = row.replace(" - INFO  ", f"{T}INFO  ") # separator for fx
+        row = row.replace(".- ", f"{T}")
+        row = row.replace(chr(0x01), f"{T}")
+        row = row.replace("=", f"{T}")
+        csv_content.append(row)
+        
+    with open(output_file_path, 'w', encoding='utf-8') as output_file:
+        output_file.write(f"sep={T}\n")  
+        output_file.writelines("\n".join(csv_content))
+
 
 if __name__ == "__main__":
     start()
