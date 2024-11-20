@@ -68,33 +68,63 @@ def save_last_directory(directory):
         print(f"Error saving to registry: {e}")
 
 
-def get_input_folder():
-    # Obtener el directorio raíz del proyecto (el directorio actual)
-    project_root = os.getcwd()
-    
-    # Crear la carpeta "input" en el root del proyecto si no existe
-    folder = os.path.join(project_root, "input")
-    os.makedirs(folder, exist_ok=True)
-    return folder
+def get_last_input():
+    """Obtiene el último valor de entrada desde el registro."""
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
+            return winreg.QueryValueEx(key, LAST_INPUT_KEY)[0]
+    except FileNotFoundError:
+        return ""  # Devuelve una cadena vacía si no hay ningún valor guardado
+
+
+def save_last_input(input_value):
+    """Guarda el último valor de entrada en el registro."""
+    try:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH) as key:
+            winreg.SetValueEx(key, LAST_INPUT_KEY, 0, winreg.REG_SZ, input_value)
+    except Exception as e:
+        print(f"Error saving to registry: {e}")
 
 
 def get_filter_inputs():
-    print("Input filter criteria (Format example: \"NVDA ASUS MSFT, INTL\" will generate a file with msgs that contain first 3 items, and another one that contain INTL)")
-    string_input = input() 
+    """Solicita al usuario los criterios de filtro y guarda el último valor ingresado."""
+    last_input = get_last_input()
+    if not last_input or last_input.strip() == "":
+        last_input = "None"
+    
+    print("\nInput filter criteria. Format example: \"NVDA ASUS MSFT, INTL\" will generate a file with fix-msgs that contain first 3 items, and another one that contain the 4th one)")
+    print(f"\nDo you want to apply filters? (Y/N, N by default)")
+    filter_input = input()
+    if len(filter_input) > 0 and str(filter_input[0]).lower() != "y":
+        return dict()
+    
+    print(f"\nEnter filter criteria, \"{last_input}\" selected by default:")
+    string_input = input()
+    if not string_input:  # Si el input es vacío, usa el último valor
+        string_input = last_input
+        
+    if string_input.strip() == "" or string_input == "None":  # Si hay un nuevo valor, guárdalo
+        save_last_input("None")
+        return dict()
+    
+    save_last_input(string_input)
     item_split_input = [item.strip().split() for item in string_input.split(",")]
-    return item_split_input
+    filtered_files_dict = {" ".join(key): [] for key in item_split_input}
+    return filtered_files_dict
 
 
-def generate_outputs(file_path, filters):
+def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]]]) -> None:
     header = []
     unfiltered = []
     securitylist = []
     error_misc = []
-    filtered_files = {" ".join(key): [] for key in filters}
-    if len(filtered_files) == 1 and "" in filtered_files: 
-        filtered_files = dict()
     
-    out_folder_path = get_out_folder(file_path)         
+    folder_path = get_output_folder(file_path)
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    print("\nDo you want to process unfiltered lines? (Y/N, N by default)")
+    unfiltered_input = input()
+    generate_unfiltered = len(unfiltered_input) > 0 and str(unfiltered_input[0]).lower() == "y"
+    
 
 
     with open(file_path, 'r') as file:
