@@ -242,8 +242,9 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
 
     with open(file_path, 'r') as file:
         lines = file.readlines()
+        print(f"LENGTH CONTENT original file: {len([s for s in lines if s])}")
 
-        i = 1
+        i = 0
         while i < len(lines):
             line = (i, lines[i].strip())
             
@@ -286,6 +287,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
             i += 1
 
     header_str = set_row_index(header, True) if len(header) != 0 else ["------------------ USER CONNECTION INFORMATION ------------------","------------------    NO INFORMATION FOUND     ------------------"]
+    print(f"LENGTH CONTENT header: {len([s for s in header_str if s])}")
     generate_file(folder_path, f"{file_name} - errors_misc", header_str, set_row_index(error_misc, True))
     generate_file(folder_path, f"{file_name} - securitylist", header_str, set_row_index(securitylist, True))
     for key in filters_dict.keys():
@@ -301,7 +303,7 @@ def set_row_index(error_misc, jump_row = False):
     for i_line in error_misc:
         if jump_row and prev_i != -1 and i_line[0] != prev_i + 1:
             result.append("")
-        result.append(f"{i_line[0]}.- {i_line[1]}")
+        result.append(f"{i_line[0] + 1}.- {i_line[1]}")
         prev_i = i_line[0]
     return result
 
@@ -314,7 +316,7 @@ def get_output_folder(file_path):
 
 
 def generate_file(dir_path, name, header, content):
-    print(f"LENGTH CONTENT {name}: {len(content)}")
+    print(f"LENGTH CONTENT {name}: {len([s for s in content if s])}")
     output_file_path = os.path.join(dir_path, f'{name}.log')
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.writelines("\n".join(header))
