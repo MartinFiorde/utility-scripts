@@ -180,7 +180,7 @@ def save_last_directory(directory):
         print(f"Error saving to registry: {e}")
 
 
-def get_last_input():
+def get_last_input() -> str:
     """Obtiene el último valor de entrada desde el registro."""
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
@@ -321,7 +321,7 @@ def generate_file(dir_path, name, header, content):
         output_file.writelines("\n\n")
         output_file.writelines("\n".join(content))
         
-def generate_csv(dir_path, name, header, content):
+def generate_csv(dir_path, name, header, content: list[str]):
     T = "\t"
     print(f"CSV GENERATED FOR {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
