@@ -208,6 +208,7 @@ def get_filter_inputs():
     print(f"\nDo you want to apply filters? (Y/N, N by default)")
     filter_input = input()
     if not (len(filter_input) > 0 and str(filter_input[0]).lower() == "y"):
+        save_last_input("None")
         return dict()
     
     print(f"\nEnter filter criteria, \"{last_input}\" selected by default:")
