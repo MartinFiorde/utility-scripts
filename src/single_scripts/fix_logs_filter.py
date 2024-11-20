@@ -215,16 +215,16 @@ def generate_file(dir_path, name, header, content):
         output_file.writelines("\n".join(content))
         
 def generate_csv(dir_path, name, header, content):
+    T = "\t"
     print(f"CSV GENERATED FOR {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
-    csv_content = []
-    T = "\t"
+    csv_content = [f"row n{T}local date{T}msg head{T}8{T}BeginString{T}9{T}BodyLength{T}35{T}MsgType{T}34{T}MsgSeqNum{T}49{T}SenderCompId{T}52{T}SendingTime{T}56{T}TargetCompId{T}"]
     
     for row in content:
         row = row.strip()
         row = row.replace("(8=", f"({T}8{T}")
         row = row.replace(" - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for clasic and plus
-        row = row.replace(" - INFO  ", f"{T}INFO  ") # separator for fx
+        row = row.replace(" - INFO  logs.CustomScreenLog - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for fx
         row = row.replace(".- ", f"{T}")
         row = row.replace(chr(0x01), f"{T}")
         row = row.replace("=", f"{T}")
