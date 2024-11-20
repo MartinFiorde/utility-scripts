@@ -3,16 +3,19 @@ import shutil
 import winreg
 from tkinter import filedialog
 
+
 REGISTRY_PATH = r"SOFTWARE\\JavaSoft\\Prefs\\filterScript"
 LAST_DIR_KEY = "LastUsedDir"
+LAST_INPUT_KEY = "LastFilterInput"
+
 
 def start() :
     file_path = pick_and_copy_file() # Paso 0: Abrir el archivo a procesar
     if not file_path: return
     
-    filter_inputs = get_filter_inputs() # Paso 1: Solicitar criterios de filtro
+    filter_dic = get_filter_inputs() # Paso 1: Solicitar criterios de filtro
     
-    generate_outputs(file_path, filter_inputs) # Paso 2: Procesar el archivo y generar 
+    generate_outputs(file_path, filter_dic) # Paso 2: Procesar el archivo y generar 
     
     input("Processing done. Press Enter to close...") 
 
@@ -32,15 +35,15 @@ def pick_and_copy_file():
         print("No file selected")
         return None
     
-    save_last_directory(os.path.dirname(original_file_path))
+    save_last_directory(original_file_path)
     
     filename, extension = os.path.splitext(os.path.basename(original_file_path)) # Obtiene el nombre y extension del archivo
-    input_folder_path = get_input_folder() # Crea/ obtiene el path al directorio de input
-    new_file_path = os.path.join(input_folder_path, f"{filename}{extension}") # Crear el path inicial
+    folder_path = get_output_folder(original_file_path) # Crea/ obtiene el path al directorio de output
+    new_file_path = os.path.join(folder_path, f"{filename}{extension}") # Crear el path inicial
     
     i = 1
     while os.path.exists(new_file_path): # Incrementar el sufijo si el archivo ya existe
-        new_file_path = os.path.join(input_folder_path, f"{filename} ({i}){extension}")
+        new_file_path = os.path.join(folder_path, f"{filename} ({i}){extension}")
         i += 1
 
     shutil.copy(original_file_path, new_file_path) # Copiar el archivo al nuevo path
@@ -49,8 +52,6 @@ def pick_and_copy_file():
 
 
 def get_last_directory():
-    # os.path.join(os.path.expanduser("~"), "Desktop") # Establece el directorio inicial en el Escritorio del usuario
-    
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
             last_dir = winreg.QueryValueEx(key, LAST_DIR_KEY)[0]
@@ -196,12 +197,8 @@ def set_row_index(error_misc, jump_row = False):
 
 def get_output_folder(file_path):
     project_root = os.getcwd() # Obtener el directorio raíz del proyecto (el directorio actual)
-    project_root = os.getcwd()
-    
-    # Crear la carpeta "input" en el root del proyecto si no existe
-    folder = os.path.join(project_root, "out")
-    folder = os.path.join(folder, os.path.basename(file_path))
-    os.makedirs(folder, exist_ok=True)
+    folder = os.path.join(project_root, "output") # Crear la carpeta "input" en el root del proyecto si no existe
+    os.makedirs(folder, exist_ok=True) # folder = os.path.join(folder, os.path.basename(file_path))
     return folder
 
 
