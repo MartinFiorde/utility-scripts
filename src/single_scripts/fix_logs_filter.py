@@ -101,7 +101,7 @@ def get_filter_inputs():
     print("\nInput filter criteria. Format example: \"NVDA ASUS MSFT, INTL\" will generate a file with fix-msgs that contain first 3 items, and another one that contain the 4th one)")
     print(f"\nDo you want to apply filters? (Y/N, N by default)")
     filter_input = input()
-    if len(filter_input) > 0 and str(filter_input[0]).lower() != "y":
+    if not (len(filter_input) > 0 and str(filter_input[0]).lower() == "y"):
         return dict()
     
     print(f"\nEnter filter criteria, \"{last_input}\" selected by default:")
