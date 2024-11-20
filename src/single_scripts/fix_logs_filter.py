@@ -133,7 +133,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
-        i = 0
+        i = 1
         while i < len(lines):
             line = (i, lines[i].strip())
             
