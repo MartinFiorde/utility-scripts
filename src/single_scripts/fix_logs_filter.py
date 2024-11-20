@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import winreg
 from tkinter import filedialog
@@ -7,6 +8,111 @@ from tkinter import filedialog
 REGISTRY_PATH = r"SOFTWARE\\JavaSoft\\Prefs\\filterScript"
 LAST_DIR_KEY = "LastUsedDir"
 LAST_INPUT_KEY = "LastFilterInput"
+
+
+MSG_TYPE_DICT = {
+    "0": "Heartbeat",
+    "1": "TestRequest",
+    "2": "ResendRequest",
+    "3": "Reject",
+    "4": "SequenceReset",
+    "5": "Logout",
+    "6": "IOI",
+    "7": "Advertisement",
+    "8": "ExecutionReport",
+    "9": "OrderCancelReject",
+    "a": "QuoteStatusRequest",
+    "A": "Logon",
+    "AA": "DerivativeSecurityList",
+    "AB": "NewOrderMultileg",
+    "AC": "MultilegOrderCancelReplace",
+    "AD": "TradeCaptureReportRequest",
+    "AE": "TradeCaptureReport",
+    "AF": "OrderMassStatusRequest",
+    "AG": "QuoteRequestReject",
+    "AH": "RFQRequest",
+    "AI": "QuoteStatusReport",
+    "AJ": "QuoteResponse",
+    "AK": "Confirmation",
+    "AL": "PositionMaintenanceRequest",
+    "AM": "PositionMaintenanceReport",
+    "AN": "RequestForPositions",
+    "AO": "RequestForPositionsAck",
+    "AP": "PositionReport",
+    "AQ": "TradeCaptureReportRequestAck",
+    "AR": "TradeCaptureReportAck",
+    "AS": "AllocationReport",
+    "AT": "AllocationReportAck",
+    "AU": "Confirmation_Ack",
+    "AV": "SettlementInstructionRequest",
+    "AW": "AssignmentReport",
+    "AX": "CollateralRequest",
+    "AY": "CollateralAssignment",
+    "AZ": "CollateralResponse",
+    "b": "MassQuoteAcknowledgement",
+    "B": "News",
+    "BA": "CollateralReport",
+    "BB": "CollateralInquiry",
+    "BC": "NetworkCounterpartySystemStatusRequest",
+    "BD": "NetworkCounterpartySystemStatusResponse",
+    "BE": "UserRequest",
+    "BF": "UserResponse",
+    "BG": "CollateralInquiryAck",
+    "BH": "ConfirmationRequest",
+    "BI": "TradingSessionListRequest",
+    "BJ": "TradingSessionList",
+    "BK": "SecurityListUpdateReport",
+    "BL": "AdjustedPositionReport",
+    "BM": "AllocationInstructionAlert",
+    "BN": "ExecutionAcknowledgement",
+    "BO": "ContraryIntentionReport",
+    "BP": "SecurityDefinitionUpdateReport",
+    "c": "SecurityDefinitionRequest",
+    "C": "Email",
+    "d": "SecurityDefinition",
+    "D": "NewOrderSingle",
+    "e": "SecurityStatusRequest",
+    "E": "NewOrderList",
+    "f": "SecurityStatus",
+    "F": "OrderCancelRequest",
+    "g": "TradingSessionStatusRequest",
+    "G": "OrderCancelReplaceRequest",
+    "h": "TradingSessionStatus",
+    "H": "OrderStatusRequest",
+    "i": "MassQuote",
+    "j": "BusinessMessageReject",
+    "J": "AllocationInstruction",
+    "k": "BidRequest",
+    "K": "ListCancelRequest",
+    "l": "BidResponse",
+    "L": "ListExecute",
+    "m": "ListStrikePrice",
+    "M": "ListStatusRequest",
+    "n": "XML_non_FIX",
+    "N": "ListStatus",
+    "o": "RegistrationInstructions",
+    "p": "RegistrationInstructionsResponse",
+    "P": "AllocationInstructionAck",
+    "q": "OrderMassCancelRequest",
+    "Q": "DontKnowTradeDK",
+    "r": "OrderMassCancelReport",
+    "R": "QuoteRequest",
+    "s": "NewOrderCross",
+    "S": "Quote",
+    "t": "CrossOrderCancelReplaceRequest",
+    "T": "SettlementInstructions",
+    "u": "CrossOrderCancelRequest",
+    "v": "SecurityTypeRequest",
+    "V": "MarketDataRequest",
+    "w": "SecurityTypes",
+    "W": "MarketDataSnapshotFullRefresh",
+    "x": "SecurityListRequest",
+    "X": "MarketDataIncrementalRefresh",
+    "y": "SecurityList",
+    "Y": "MarketDataRequestReject",
+    "z": "DerivativeSecurityListRequest",
+    "Z": "QuoteCancel"
+}
 
 
 def start() :
@@ -218,7 +324,8 @@ def generate_csv(dir_path, name, header, content):
     T = "\t"
     print(f"CSV GENERATED FOR {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
-    csv_content = [f"row n{T}local date{T}msg head{T}8{T}BeginString{T}9{T}BodyLength{T}35{T}MsgType{T}34{T}MsgSeqNum{T}49{T}SenderCompId{T}52{T}SendingTime{T}56{T}TargetCompId{T}"]
+    csv_content = [f"row n{T}local date{T}msg head{T}8{T}BeginString{T}9{T}BodyLength{T}35{T}MsgType{T}MsgTypeTEXT{T}34{T}MsgSeqNum{T}49{T}SenderCompId{T}52{T}SendingTime{T}56{T}TargetCompId{T}"]
+    pattern = r"\t35\t([A-Za-z0-9]+)\t34\t"
     
     for row in content:
         row = row.strip()
@@ -228,11 +335,18 @@ def generate_csv(dir_path, name, header, content):
         row = row.replace(".- ", f"{T}")
         row = row.replace(chr(0x01), f"{T}")
         row = row.replace("=", f"{T}")
+        row = re.sub(pattern, replace_msg_type, row)
         csv_content.append(row)
         
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.write(f"sep={T}\n")  
         output_file.writelines("\n".join(csv_content))
+        
+def replace_msg_type(match):
+        msg_type = match.group(1)  # Captura el valor de "V" o el que corresponda
+        msg_text = MSG_TYPE_DICT.get(msg_type, "Unknown")  # Busca en el diccionario
+        return f"\t35\t{msg_type}\t{msg_text}\t34\t"  # Reemplaza con el nuevo formato
+
 
 
 if __name__ == "__main__":
