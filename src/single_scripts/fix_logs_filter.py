@@ -14,7 +14,7 @@ def start() :
     
     generate_outputs(file_path, filter_inputs) # Paso 2: Procesar el archivo y generar 
     
-    input("Done. Press Enter to close...") 
+    input("Processing done. Press Enter to close...") 
 
 
 def pick_and_copy_file():
@@ -96,60 +96,74 @@ def generate_outputs(file_path, filters):
     
     out_folder_path = get_out_folder(file_path)         
 
+
     with open(file_path, 'r') as file:
         lines = file.readlines()
-        
+
         i = 0
         while i < len(lines):
-            line = f"{i}.- {lines[i].strip()}"
+            line = (i, lines[i].strip())
             
-            if "35=y" in line:
+            if "35=y" in line[1]:
                 securitylist.append(line)
                 i += 1
                 continue
-            
-            if "--------------- USER CON" in line:
+
+            if "--------------- USER CON" in line[1]:
                 if i > 0:
-                    header.append(f"{i - 1}.- {lines[i - 1].strip()}")
+                    header.append((i - 1, lines[i - 1].strip()))
                 if len(error_misc) > 0:
                     error_misc.pop()
 
                 header.append(line)
-                
+
                 for j in range(1, 9):
                     if i + j < len(lines):
-                        header.append(f"{i + j}.- {lines[i + j].strip()}")
+                        header.append((i + j, lines[i + j].strip()))
                 i += 9
                 continue
 
             is_done = False
-            for key in filtered_files.keys():
+            for key in filters_dict.keys():
                 for filter in key.split():
-                    if filter in line:
-                        filtered_files[key].append(line)
+                    if filter in line[1]:
+                        filters_dict[key].append(line)
                         is_done = True
             if is_done: 
                 i += 1
                 continue
-                    
-            if "8=FIXT.1.1" in line:
-                unfiltered.append(line)
+
+            if "8=FIXT.1.1" in line[1]:
+                if generate_unfiltered:
+                    unfiltered.append(line)
                 i += 1
                 continue
 
             error_misc.append(line)
             i += 1
-            
-    
-    generate_file(out_folder_path, "errors_misc", header, error_misc)
-    generate_file(out_folder_path, "securitylist", header, securitylist)
-    generate_file(out_folder_path, "unfiltered", header, unfiltered)
-    for key in filtered_files.keys():
-        generate_file(out_folder_path, f"filtered by {key}", header, filtered_files[key])
+
+    header_str = set_row_index(header, True)
+    generate_file(folder_path, f"{file_name} - errors_misc", header_str, set_row_index(error_misc, True))
+    generate_file(folder_path, f"{file_name} - securitylist", header_str, set_row_index(securitylist, True))
+    for key in filters_dict.keys():
+        generate_file(folder_path, f"{file_name} - filtered by {key}", header_str, set_row_index(filters_dict[key]))
+    if generate_unfiltered:
+        generate_file(folder_path, f"{file_name} - unfiltered", header_str, set_row_index(unfiltered))
 
 
-def get_out_folder(file_path):
-    # Obtener el directorio raíz del proyecto (el directorio actual)
+def set_row_index(error_misc, jump_row = False):
+    result = []
+    prev_i = -1
+    for i_line in error_misc:
+        if jump_row and prev_i != -1 and i_line[0] != prev_i + 1:
+            result.append("")
+        result.append(f"{i_line[0]}.- {i_line[1]}")
+        prev_i = i_line[0]
+    return result
+
+
+def get_output_folder(file_path):
+    project_root = os.getcwd() # Obtener el directorio raíz del proyecto (el directorio actual)
     project_root = os.getcwd()
     
     # Crear la carpeta "input" en el root del proyecto si no existe
@@ -158,13 +172,14 @@ def get_out_folder(file_path):
     os.makedirs(folder, exist_ok=True)
     return folder
 
+
 def generate_file(dir_path, name, header, content):
     print(f"LENGTH CONTENT {name}: {len(content)}")
     output_file_path = os.path.join(dir_path, f'{name}.log')
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.writelines("\n".join(header))
-        output_file.writelines("\n")
+        output_file.writelines("\n\n")
         output_file.writelines("\n".join(content))
-        
+
 if __name__ == "__main__":
     start()
