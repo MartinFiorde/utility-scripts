@@ -145,7 +145,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
                 i += 1
                 continue
 
-            if "--------------- USER CON" in line[1]:
+            if len(header) == 0 and "--------------- USER CON" in line[1]:
                 if i > 0:
                     header.append((i - 1, lines[i - 1].strip()))
                 if len(error_misc) > 0:
@@ -178,7 +178,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
             error_misc.append(line)
             i += 1
 
-    header_str = set_row_index(header, True)
+    header_str = set_row_index(header, True) if len(header) != 0 else ["------------------ USER CONNECTION INFORMATION ------------------","------------------    NO INFORMATION FOUND     ------------------"]
     generate_file(folder_path, f"{file_name} - errors_misc", header_str, set_row_index(error_misc, True))
     generate_file(folder_path, f"{file_name} - securitylist", header_str, set_row_index(securitylist, True))
     for key in filters_dict.keys():
