@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import winreg
+from datetime import datetime
 from tkinter import filedialog
 
 
@@ -330,30 +331,44 @@ def generate_csv(dir_path, name, header, content: list[str]):
     T = "\t"
     print(f"CSV GENERATION {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
-    csv_content = [f"full row{T}row n{T}local date{T}msg head{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}'56{T}TargetCompId{T}"]
+    csv_content = [f"full row{T}row n{T}local date (yyyy-mm-dd hh:mm:ss.fff){T}minutes in seconds.microseconds{T}msg head{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}minutes in seconds.microseconds{T}'56{T}TargetCompId{T}"]
     pattern_msg_type = r"\t35\t([A-Za-z0-9]+)\t34\t"
+    pattern_data_time = r"\t(\d{8}-\d{2}:\d{2}:\d{2}\.\d{3})\t"
     
     for row in content:
         full_row = str(row)
         row = row.strip()
-        row = row.replace("(8=", f"({T}8{T}")
+        row = row.replace("(8=FIXT.1.19", f"({T}8{T}FIXT.1.1{T}9")
         row = row.replace(" - INFO  logs.CustomScreenLog - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for fx
         row = row.replace(" - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for clasic and plus
         row = row.replace(".- ", f"{T}")
+        row = row.replace(",", ".")
         row = row.replace(chr(0x01), f"{T}")
         row = row.replace("=", f"{T}")
         row = re.sub(pattern_msg_type, replace_msg_type, row)
+        row = re.sub(pattern_data_time, replace_with_datetime, row)
         csv_content.append(full_row + T + row)
         
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.write(f"sep={T}\n")  
         output_file.writelines("\n".join(csv_content))
-        
+
+
 def replace_msg_type(match):
         msg_type = match.group(1)  # Captura el valor de "V" o el que corresponda
         msg_text = MSG_TYPE_DICT.get(msg_type, "Unknown")  # Busca en el diccionario
         return f"\t35\t{msg_type}\t{msg_text}\t34\t"  # Reemplaza con el nuevo formato
 
+
+def replace_with_datetime(match):
+    date_str = match.group(1)  # Captura la fecha del grupo de la regex
+    date_obj = datetime.strptime(date_str, "%Y%m%d-%H:%M:%S.%f")  # Convierte a datetime
+    
+    seconds_only = date_obj.second + date_obj.microsecond / 1_000_000  # Calcular los segundos dentro del minuto
+    
+    total_seconds = date_obj.minute * 60 + seconds_only  # Minutos a segundos + segundos dentro del minuto
+    
+    return f"\t{date_obj}\t{total_seconds:.3f}\t"  # Devuelve el nuevo formato
 
 
 if __name__ == "__main__":
