@@ -13,7 +13,5 @@ else
     exit 1
 fi
 
-$PYTHON_CMD -m src.main
-
 echo "Script terminado. Presiona Enter para cerrar..."
 read
