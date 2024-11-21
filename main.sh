@@ -1,9 +1,11 @@
 #!/bin/bash
 
-if command -v python3 &>/dev/null; then
-    PYTHON_CMD="python3"
-elif command -v python &>/dev/null; then
-    PYTHON_CMD="python"
+# Detectar si 'python' está disponible y es Python 3
+if command -v python &>/dev/null && python --version 2>&1 | grep -q "Python 3"; then
+    python -m src.main
+# Detectar si 'python3' está disponible
+elif command -v python3 &>/dev/null; then
+    python3 -m src.main
 else
     echo "Error: Python no está instalado en este sistema."
     echo "Por favor, instala Python desde https://www.python.org/downloads/"
