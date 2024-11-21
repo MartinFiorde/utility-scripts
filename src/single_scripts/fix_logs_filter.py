@@ -3,7 +3,7 @@ import re
 import shutil
 import winreg
 from datetime import datetime
-from tkinter import filedialog
+from tkinter import Tk, filedialog
 
 
 REGISTRY_PATH = r"SOFTWARE\\JavaSoft\\Prefs\\filterScript"
@@ -134,12 +134,19 @@ def pick_and_copy_file():
     else:
         initial_dir, initial_file = os.path.split(initial_file_path)  # Separa el directorio y el nombre del archivo
     
+    root = Tk()
+    root.withdraw()  # Oculta la ventana principal
+    root.attributes("-topmost", True)  # Asegura que esté en primer plano
+    root.iconify()  # Minimiza la ventana principal para que no sea visible
+    
     original_file_path = filedialog.askopenfilename(
         initialdir=initial_dir,
         initialfile=initial_file,
         title="Selecciona un archivo",
         filetypes=(("Archivos permitidos", "*.reg *.log *.txt"),)
     ) # Abre el cuadro de diálogo para seleccionar un archivo
+    
+    root.destroy()  # Cierra la ventana principal
     
     if not original_file_path:
         print("No file selected")
