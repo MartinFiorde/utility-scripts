@@ -331,7 +331,7 @@ def generate_csv(dir_path, name, header, content: list[str]):
     T = "\t"
     print(f"CSV GENERATION {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
-    csv_content = [f"full row{T}row n{T}local date (yyyy-mm-dd hh:mm:ss.fff){T}minutes in seconds.microseconds{T}msg head{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}minutes in seconds.microseconds{T}'56{T}TargetCompId{T}"]
+    csv_content = [f"full row{T}instrument name{T}row n{T}local date (yyyy-mm-dd hh:mm:ss.000){T}minutes in seconds.microseconds{T}msg head{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}minutes in seconds.microseconds{T}'56{T}TargetCompId{T}"]
     pattern_msg_type = r"\t35\t([A-Za-z0-9]+)\t34\t"
     pattern_data_time = r"\t(\d{8}-\d{2}:\d{2}:\d{2}\.\d{3})\t"
     
@@ -347,7 +347,8 @@ def generate_csv(dir_path, name, header, content: list[str]):
         row = row.replace("=", f"{T}")
         row = re.sub(pattern_msg_type, replace_msg_type, row)
         row = re.sub(pattern_data_time, replace_with_datetime, row)
-        csv_content.append(full_row + T + row)
+        instrument = extract_instrument(row)
+        csv_content.append(full_row + instrument + row)
         
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.write(f"sep={T}\n")  
@@ -363,12 +364,21 @@ def replace_msg_type(match):
 def replace_with_datetime(match):
     date_str = match.group(1)  # Captura la fecha del grupo de la regex
     date_obj = datetime.strptime(date_str, "%Y%m%d-%H:%M:%S.%f")  # Convierte a datetime
-    
+
     seconds_only = date_obj.second + date_obj.microsecond / 1_000_000  # Calcular los segundos dentro del minuto
-    
     total_seconds = date_obj.minute * 60 + seconds_only  # Minutos a segundos + segundos dentro del minuto
-    
-    return f"\t{date_obj}\t{total_seconds:.3f}\t"  # Devuelve el nuevo formato
+
+    return f"\t{date_obj}\t{total_seconds:.3f}\t"
+
+
+def extract_instrument(input_string):
+    # Patrón para coincidir con el formato "\tXXXXXXX-dddd-X-XX-XXX\t"
+    pattern = r'\t\S+-\d{4}-[A-Z]-[A-Z]{2}-[A-Z]{3}\t'
+    match = re.search(pattern, input_string)
+    if match:
+        return match.group(0)
+    else:
+        return "\tUnknown\t"
 
 
 if __name__ == "__main__":
