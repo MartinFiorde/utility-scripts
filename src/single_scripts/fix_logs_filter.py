@@ -1,9 +1,15 @@
 import os
 import re
+import sys
 import shutil
 import winreg
 from datetime import datetime
 from tkinter import Tk, filedialog
+
+IS_WINDOWS = sys.platform == "win32" or sys.platform == "cygwin" # Verificar si estamos en un sistema Windows
+
+if IS_WINDOWS:
+    import winreg
 
 
 REGISTRY_PATH = r"SOFTWARE\\JavaSoft\\Prefs\\filterScript"
@@ -169,43 +175,48 @@ def pick_and_copy_file():
 
 
 def get_last_directory():
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
-            last_dir = winreg.QueryValueEx(key, LAST_DIR_KEY)[0]
-            if os.path.exists(last_dir):  # Verificar que el archivo aún existe
-                return last_dir
-            elif os.path.isdir(os.path.dirname(last_dir)):  # Si el archivo no existe, pero el directorio sí
-                return os.path.dirname(last_dir)
-    except FileNotFoundError:
-        print("Last directory opened not found. Setting initial directory to Desktop.")
-    return os.path.join(os.path.expanduser("~"), "Desktop")  # Valor predeterminad
+    if IS_WINDOWS:
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
+                last_dir = winreg.QueryValueEx(key, LAST_DIR_KEY)[0]
+                if os.path.exists(last_dir):  # Verificar que el archivo aún existe
+                    return last_dir
+                elif os.path.isdir(os.path.dirname(last_dir)):  # Si el archivo no existe, pero el directorio sí
+                    return os.path.dirname(last_dir)
+        except FileNotFoundError:
+            print("Last directory opened not found. Setting initial directory to Desktop.")
+    return os.path.join(os.path.expanduser("~"), "Desktop")  # Valor predeterminado
 
 
 def save_last_directory(directory):
     """Guarda el último directorio utilizado en el registro."""
-    try:
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH) as key:
-            winreg.SetValueEx(key, LAST_DIR_KEY, 0, winreg.REG_SZ, directory)
-    except Exception as e:
-        print(f"Error saving to registry: {e}")
+    if IS_WINDOWS:
+        try:
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH) as key:
+                winreg.SetValueEx(key, LAST_DIR_KEY, 0, winreg.REG_SZ, directory)
+        except Exception as e:
+            print(f"Error saving to registry: {e}")
 
 
 def get_last_input() -> str:
     """Obtiene el último valor de entrada desde el registro."""
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
-            return winreg.QueryValueEx(key, LAST_INPUT_KEY)[0]
-    except FileNotFoundError:
-        return ""  # Devuelve una cadena vacía si no hay ningún valor guardado
+    if IS_WINDOWS:
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
+                return winreg.QueryValueEx(key, LAST_INPUT_KEY)[0]
+        except FileNotFoundError:
+            print("Error finding value in registry")
+    return ""  # Devuelve una cadena vacía si no hay ningún valor guardado
 
 
 def save_last_input(input_value):
     """Guarda el último valor de entrada en el registro."""
-    try:
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH) as key:
-            winreg.SetValueEx(key, LAST_INPUT_KEY, 0, winreg.REG_SZ, input_value)
-    except Exception as e:
-        print(f"Error saving to registry: {e}")
+    if IS_WINDOWS:
+        try:
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH) as key:
+                winreg.SetValueEx(key, LAST_INPUT_KEY, 0, winreg.REG_SZ, input_value)
+        except Exception as e:
+            print(f"Error saving to registry: {e}")
 
 
 def get_filter_inputs():
