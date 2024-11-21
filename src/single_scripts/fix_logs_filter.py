@@ -164,8 +164,10 @@ def get_last_directory():
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_PATH, 0, winreg.KEY_READ) as key:
             last_dir = winreg.QueryValueEx(key, LAST_DIR_KEY)[0]
-            if os.path.exists(last_dir):  # Verificar que el directorio aún existe
+            if os.path.exists(last_dir):  # Verificar que el archivo aún existe
                 return last_dir
+            elif os.path.isdir(os.path.dirname(last_dir)):  # Si el archivo no existe, pero el directorio sí
+                return os.path.dirname(last_dir)
     except FileNotFoundError:
         print("Last directory opened not found. Setting initial directory to Desktop.")
     return os.path.join(os.path.expanduser("~"), "Desktop")  # Valor predeterminad
@@ -295,6 +297,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
         generate_csv(folder_path, f"{file_name} - filtered by {key}", header_str, set_row_index(filters_dict[key]))
     if generate_unfiltered:
         generate_file(folder_path, f"{file_name} - unfiltered", header_str, set_row_index(unfiltered))
+        generate_csv(folder_path, f"{file_name} - unfiltered", header_str, set_row_index(unfiltered))
 
 
 def set_row_index(error_misc, jump_row = False):
@@ -325,21 +328,22 @@ def generate_file(dir_path, name, header, content):
         
 def generate_csv(dir_path, name, header, content: list[str]):
     T = "\t"
-    print(f"CSV GENERATED FOR {name}")
+    print(f"CSV GENERATION {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
-    csv_content = [f"row n{T}local date{T}msg head{T}8{T}BeginString{T}9{T}BodyLength{T}35{T}MsgType{T}MsgTypeTEXT{T}34{T}MsgSeqNum{T}49{T}SenderCompId{T}52{T}SendingTime{T}56{T}TargetCompId{T}"]
-    pattern = r"\t35\t([A-Za-z0-9]+)\t34\t"
+    csv_content = [f"full row{T}row n{T}local date{T}msg head{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}'56{T}TargetCompId{T}"]
+    pattern_msg_type = r"\t35\t([A-Za-z0-9]+)\t34\t"
     
     for row in content:
+        full_row = str(row)
         row = row.strip()
         row = row.replace("(8=", f"({T}8{T}")
-        row = row.replace(" - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for clasic and plus
         row = row.replace(" - INFO  logs.CustomScreenLog - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for fx
+        row = row.replace(" - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for clasic and plus
         row = row.replace(".- ", f"{T}")
         row = row.replace(chr(0x01), f"{T}")
         row = row.replace("=", f"{T}")
-        row = re.sub(pattern, replace_msg_type, row)
-        csv_content.append(row)
+        row = re.sub(pattern_msg_type, replace_msg_type, row)
+        csv_content.append(full_row + T + row)
         
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.write(f"sep={T}\n")  
