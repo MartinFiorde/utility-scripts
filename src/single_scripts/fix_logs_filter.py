@@ -119,11 +119,8 @@ MSG_TYPE_DICT = {
 def start() :
     file_path = pick_and_copy_file() # Paso 0: Abrir el archivo a procesar
     if not file_path: return
-    
     filter_dic = get_filter_inputs() # Paso 1: Solicitar criterios de filtro
-    
     generate_outputs(file_path, filter_dic) # Paso 2: Procesar el archivo y generar 
-    
     input("Processing done. Press Enter to close...") 
 
 
@@ -133,31 +130,31 @@ def pick_and_copy_file():
         initial_dir, initial_file = initial_file_path, ""
     else:
         initial_dir, initial_file = os.path.split(initial_file_path)  # Separa el directorio y el nombre del archivo
-    
+
     root = Tk()
     root.withdraw()  # Oculta la ventana principal
     root.attributes("-topmost", True)  # Asegura que esté en primer plano
     root.iconify()  # Minimiza la ventana principal para que no sea visible
-    
+
     original_file_path = filedialog.askopenfilename(
         initialdir=initial_dir,
         initialfile=initial_file,
         title="Selecciona un archivo",
         filetypes=(("Archivos permitidos", "*.reg *.log *.txt"),)
     ) # Abre el cuadro de diálogo para seleccionar un archivo
-    
+
     root.destroy()  # Cierra la ventana principal
-    
+
     if not original_file_path:
         print("No file selected")
         return None
-    
+
     save_last_directory(original_file_path)
-    
+
     filename, extension = os.path.splitext(os.path.basename(original_file_path)) # Obtiene el nombre y extension del archivo
     folder_path = get_output_folder(original_file_path) # Crea/ obtiene el path al directorio de output
     new_file_path = os.path.join(folder_path, f"{filename}{extension}") # Crear el path inicial
-    
+
     i = 1
     while os.path.exists(new_file_path): # Incrementar el sufijo si el archivo ya existe
         new_file_path = os.path.join(folder_path, f"{filename} ({i}){extension}")
@@ -213,23 +210,23 @@ def get_filter_inputs():
     last_input = get_last_input()
     if not last_input or last_input.strip() == "":
         last_input = "None"
-    
+
     print("\nInput filter criteria. Format example: \"NVDA ASUS MSFT, INTL\" will generate a file with fix-msgs that contain first 3 items, and another one that contain the 4th one)")
     print(f"\nDo you want to apply filters? (Y/N, N by default)")
     filter_input = input()
     if not (len(filter_input) > 0 and str(filter_input[0]).lower() == "y"):
         save_last_input("None")
         return dict()
-    
+
     print(f"\nEnter filter criteria, \"{last_input}\" selected by default:")
     string_input = input()
     if not string_input:  # Si el input es vacío, usa el último valor
         string_input = last_input
-        
+
     if string_input.strip() == "" or string_input == "None":  # Si hay un nuevo valor, guárdalo
         save_last_input("None")
         return dict()
-    
+
     save_last_input(string_input)
     item_split_input = [item.strip().split() for item in string_input.split(",")]
     filtered_files_dict = {" ".join(key): [] for key in item_split_input}
@@ -241,19 +238,19 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
     unfiltered = []
     securitylist = []
     error_misc = []
-    
+
     folder_path = get_output_folder(file_path)
     file_name = os.path.splitext(os.path.basename(file_path))[0]
     print("\nDo you want to process unfiltered lines? (Y/N, N by default)")
     unfiltered_input = input()
     generate_unfiltered = len(unfiltered_input) > 0 and str(unfiltered_input[0]).lower() == "y"
-    
+
 
 
     with open(file_path, 'r') as file:
         lines = file.readlines()
         print(f"LENGTH CONTENT original file: {len([s for s in lines if s])}")
-
+        
         i = 0
         while i < len(lines):
             line = (i, lines[i].strip())
@@ -286,7 +283,6 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
             if is_done: 
                 i += 1
                 continue
-
             if "8=FIXT.1.1" in line[1]:
                 if generate_unfiltered:
                     unfiltered.append(line)
@@ -333,30 +329,30 @@ def generate_file(dir_path, name, header, content):
         output_file.writelines("\n".join(header))
         output_file.writelines("\n\n")
         output_file.writelines("\n".join(content))
-        
+
 def generate_csv(dir_path, name, header, content: list[str]):
     T = "\t"
     print(f"CSV GENERATION {name}")
     output_file_path = os.path.join(dir_path, f'{name}.csv')
-    csv_content = [f"full row{T}instrument name{T}row n{T}local date (yyyy-mm-dd hh:mm:ss.000){T}minutes in seconds.microseconds{T}msg head{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}minutes in seconds.microseconds{T}'56{T}TargetCompId{T}"]
+    csv_column_headers = f"full row{T}instrument name{T}row n{T}local date (yyyy-mm-dd hh:mm:ss.000){T}minutes in seconds.microseconds{T}log header{T}'8{T}BeginString{T}'9{T}BodyLength{T}'35{T}MsgType{T}MSG TYPE TITLE{T}'34{T}MsgSeqNum{T}'49{T}SenderCompId{T}'52{T}SendingTime{T}minutes in seconds.microseconds{T}'56{T}TargetCompId{T}"
+    csv_content = [csv_column_headers]
+    pattern_log_header = r"\.\- (\d{8}-\d{2}:\d{2}:\d{2}.\d{3}) \- "
     pattern_msg_type = r"\t35\t([A-Za-z0-9]+)\t34\t"
     pattern_data_time = r"\t(\d{8}-\d{2}:\d{2}:\d{2}\.\d{3})\t"
-    
+
     for row in content:
         full_row = str(row)
         row = row.strip()
-        row = row.replace("(8=FIXT.1.19", f"({T}8{T}FIXT.1.1{T}9")
-        row = row.replace(" - INFO  logs.CustomScreenLog - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for fx
-        row = row.replace(" - <FIXT.1.1", f"{T}<FIXT.1.1") # separator for clasic and plus
-        row = row.replace(".- ", f"{T}")
         row = row.replace(",", ".")
+        row = re.sub(pattern_log_header, r"\t\1\t", row)
+        row = row.replace("8=FIXT.1.19", f"{T}8{T}FIXT.1.1{T}9")
         row = row.replace(chr(0x01), f"{T}")
         row = row.replace("=", f"{T}")
         row = re.sub(pattern_msg_type, replace_msg_type, row)
         row = re.sub(pattern_data_time, replace_with_datetime, row)
         instrument = extract_instrument(row)
         csv_content.append(full_row + instrument + row)
-        
+
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.write(f"sep={T}\n")  
         output_file.writelines("\n".join(csv_content))
