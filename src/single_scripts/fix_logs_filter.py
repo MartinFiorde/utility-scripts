@@ -351,17 +351,18 @@ def recover_soh(line: str, separator):
     return line
 
 
-def set_row_index(error_misc, jump_row = False):
+def set_row_index(lines_pair, jump_row = False):
     result = []
-    prev_i = -1
-    for i_line in error_misc:
-        if jump_row and prev_i != -1:
-            if prev_i + 1 < i_line[0]:
-                i_line[1] = "    "+i_line[1]
-            if prev_i + 2 < i_line[0]:
+    previous_index = -1
+    for current_index, content in lines_pair:
+        if jump_row and previous_index != -1:
+            if previous_index + 2 < current_index:
                 result.append("")
-        result.append(f"{i_line[0] + 1}.- {i_line[1]}")
-        prev_i = i_line[0]
+            elif previous_index + 1 < current_index:
+                content = "    "+content
+                
+        result.append(f"{current_index + 1}.- {content}")
+        previous_index = current_index
     return result
 
 
