@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Detectar si 'python' está disponible y es Python 3
+# ----- Detectar si 'python' está disponible y es Python 3 ----- 
 if command -v python &>/dev/null && python --version 2>&1 | grep -q "Python 3"; then
     python -m src.main
-# Detectar si 'python3' está disponible
+# ----- Detectar si 'python3' está disponible ----- 
 elif command -v python3 &>/dev/null; then
     python3 -m src.main
 else
@@ -13,5 +13,6 @@ else
     exit 1
 fi
 
-echo "Script terminado. Presiona Enter para cerrar..."
-read
+# ----- Degub stop ----- 
+# echo "Script terminado. Presiona Enter para cerrar..."
+# read

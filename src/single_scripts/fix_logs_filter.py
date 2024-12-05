@@ -242,12 +242,13 @@ def get_filter_inputs():
 def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]]]) -> None:
     header = []
     unfiltered = []
-    securitylist = []
+    loginFixMsgs = []
+    startingMarketData = []
     error_misc = []
 
     folder_path = get_output_folder(file_path)
     file_name = os.path.splitext(os.path.basename(file_path))[0]
-    print("\nDo you want to process unfiltered lines? (Y/N, N by default)")
+    print("\nDo you want to process market data and unfiltered lines? (Y/N, N by default)")
     unfiltered_input = input()
     generate_unfiltered = len(unfiltered_input) > 0 and str(unfiltered_input[0]).lower() == "y"
 
@@ -262,6 +263,7 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
         i = 0
         while i < len(lines):
             line = [i, lines[i].strip()]
+            
             if "8=FIXT.1.19=" in line[1]:
                 line[1] = recover_soh(line[1], "")
             if "8=FIXT.1.1|9=" in line[1]:
@@ -272,8 +274,14 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
             if "\t\t" in line[1]:
                 print("TRUE DOBLE TAB POST RECOVER")
             
-            if "35=y" in line[1]:
-                securitylist.append(line)
+            if "35=x" in line[1] or "35=y" in line[1] or "35=B" in line[1] or "35=6" in line[1]:
+                loginFixMsgs.append(line)
+                i += 1
+                continue
+            
+            if "35=g" in line[1] or "35=c" in line[1] or "35=V" in line[1] or "35=h" in line[1] or "35=d" in line[1] or "35=W" in line[1]:
+                if generate_unfiltered:
+                    startingMarketData.append(line)
                 i += 1
                 continue
 
@@ -300,6 +308,12 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
             if is_done: 
                 i += 1
                 continue
+            
+            if "35=0" in line[1]:
+                error_misc.append(line)
+                i += 1
+                continue
+            
             if "8=FIXT.1.1" in line[1]:
                 if generate_unfiltered:
                     unfiltered.append(line)
@@ -312,11 +326,12 @@ def generate_outputs(file_path: str, filters_dict: dict[str, list[tuple[int,str]
     header_str = set_row_index(header, True) if len(header) != 0 else ["------------------ USER CONNECTION INFORMATION ------------------","------------------    NO INFORMATION FOUND     ------------------"]
     print(f"LENGTH CONTENT header: {len([s for s in header_str if s])}")
     generate_file(folder_path, f"{file_name} - errors_misc", header_str, set_row_index(error_misc, True))
-    generate_file(folder_path, f"{file_name} - securitylist", header_str, set_row_index(securitylist, True))
+    generate_file(folder_path, f"{file_name} - login initial fix messages", header_str, set_row_index(loginFixMsgs, True))
     for key in filters_dict.keys():
         generate_file(folder_path, f"{file_name} - filtered by {key}", header_str, set_row_index(filters_dict[key]))
         generate_csv(folder_path, f"{file_name} - filtered by {key}", header_str, set_row_index(filters_dict[key]))
     if generate_unfiltered:
+        generate_file(folder_path, f"{file_name} - starting market data messages", header_str, set_row_index(startingMarketData, True))
         generate_file(folder_path, f"{file_name} - unfiltered", header_str, set_row_index(unfiltered))
         generate_csv(folder_path, f"{file_name} - unfiltered", header_str, set_row_index(unfiltered))
 
@@ -340,8 +355,11 @@ def set_row_index(error_misc, jump_row = False):
     result = []
     prev_i = -1
     for i_line in error_misc:
-        if jump_row and prev_i != -1 and i_line[0] != prev_i + 1:
-            result.append("")
+        if jump_row and prev_i != -1:
+            if prev_i + 1 < i_line[0]:
+                i_line[1] = "    "+i_line[1]
+            if prev_i + 2 < i_line[0]:
+                result.append("")
         result.append(f"{i_line[0] + 1}.- {i_line[1]}")
         prev_i = i_line[0]
     return result
